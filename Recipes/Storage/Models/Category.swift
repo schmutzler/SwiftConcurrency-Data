@@ -10,10 +10,12 @@ import SwiftData
 
 @Model
 final class Category: CategoryProtocol, Decodable, Identifiable, Sendable {
-    @Attribute(.unique) var id: String = ""
-    var name: String = ""
+    @Attribute(.unique) var id: String
+    @Attribute(.unique) var name: String
     var thumbnail: String?
     var details: String?
+    var isBookmarked: Bool = false
+    @Relationship(deleteRule: .nullify, inverse: \Meal.category) var meals: [Meal] = []
 
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)

@@ -9,70 +9,76 @@ import SwiftUI
 import SwiftData
 
 struct MealsListView: View {
-    @Environment(\.modelContext) private var modelContext
     @Query private var meals: [Meal]
-    @State private var searchText: String = ""
 
     private let categoryName: String
     private let apiClient: FetchMealsProtocol
+    private let searchText: String
 
-    init(categoryName: String, apiClient: FetchMealsProtocol) {
+    init(categoryName: String, searchText: String, filterBookmarks: Bool, apiClient: FetchMealsProtocol) {
         self.categoryName = categoryName
+        self.searchText = searchText
         self.apiClient = apiClient
-        _meals = Query(filter: #Predicate { !$0.name.isEmpty && $0.category == categoryName }, sort: \Meal.name)
+        _meals = Query(filter: #Predicate { meal in
+            !meal.name.isEmpty &&
+            meal.categoryName == categoryName &&
+            (filterBookmarks ? meal.isBookmarked : true)
+        }, sort: \.name)
     }
 
     var body: some View {
-        List {
-            ForEach(meals) { meal in
-                NavigationLink {
-                    MealDetailView(meal: meal)
-                        .modelContainer(modelContext.container)
-
-                } label: {
-                    HStack {
-                        // TODO: Cache images
-                        AsyncImage(url: meal.imageURL) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .scaledToFit()
-                            } else if phase.error != nil {
-                                Image(systemName: "exclamationmark.triangle")
-                                    .resizable()
-                                    .foregroundStyle(Color.red)
-                                    .scaledToFit()
-                            } else {
-                                ProgressView()
+        ZStack {
+            let filteredMeals = meals.filter { meal in
+                (searchText.isEmpty || meal.name.lowercased().contains(searchText.lowercased()) || meal.recipeItems.contains { recipeItem in
+                    recipeItem.ingredient.lowercased().contains(searchText.lowercased())
+                })
+            }
+            if filteredMeals.isEmpty {
+                Text("No meals were found.\nEnsure search & filters aren't too strict.\nPull to refresh.")
+                    .multilineTextAlignment(.center)
+            } else {
+                List(filteredMeals) { meal in
+                    NavigationLink {
+                        MealDetailView(meal: meal, apiClient: apiClient)
+                    } label: {
+                        HStack {
+                            AsyncImage(url: meal.imageURL) { phase in
+                                if let image = phase.image {
+                                    image
+                                        .resizable()
+                                        .scaledToFit()
+                                } else if phase.error != nil {
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .resizable()
+                                        .foregroundStyle(Color.red)
+                                        .scaledToFit()
+                                } else {
+                                    ProgressView()
+                                }
                             }
+                            .frame(width: 64, height: 64)
+                            Text(meal.name)
+                                .font(.system(size: 16))
                         }
-                        .frame(width: 64, height: 64)
-                        Text(meal.name)
-                            .font(.system(size: 16))
-                    }
-                }
-                .task {
-                    do {
-                        try await apiClient.refreshMeal(for: meal.id)
-                    } catch {
-                        print("Unable to retrieve meal details for \(meal.name)")
                     }
                 }
             }
         }
         .refreshable {
             do {
-                try await apiClient.refreshMeals(for: categoryName)
+                try await apiClient.refreshMealsFull(for: meals)
             }
             catch {
                 print("Unable to retrieve meals for \(categoryName)")
             }
         }
-        .navigationTitle(categoryName)
-        .searchable(text: $searchText ,prompt: "Search for Cateogry")
+        .task {
+            do {
+                try await apiClient.refreshMealsFull(for: meals)
+            }
+            catch {
+                print("Unable to retrieve meals for \(categoryName)")
+            }
+        }
     }
 }
-
-//#Preview {
-//    MealsListView(categoryName: "Dessert", apiClient: <#any FetchMealsProtocol#>)
-//}

@@ -11,9 +11,10 @@ import SwiftData
 @Model
 final class Meal: MealProtocol, Decodable, Identifiable, Sendable {
     @Attribute(.unique) var id: String = ""
-    var name: String = ""
+    @Attribute(.unique) var name: String = ""
     var drinkAlternate: String?
-    var category: String?
+    var categoryName: String?
+    var category: Category?
     var area: String?
     var instructions: String?
     var thumbnail: String?
@@ -24,20 +25,15 @@ final class Meal: MealProtocol, Decodable, Identifiable, Sendable {
     var imageSource: String?
     var creativeCommonsConfirmed: String?
     var dateModified: String?
-
-    // Use for Preview
-    init(id: String, name: String) {
-        self.id = id
-        self.name = name
-    }
+    var isBookmarked: Bool = false
 
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        id = try container.decodeIfPresent(String.self, forKey: .id) ?? ""
+        id = try container.decode(String.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
         drinkAlternate = try container.decodeIfPresent(String.self, forKey: .drinkAlternate)
-        category = try container.decodeIfPresent(String.self, forKey: .category)
+        categoryName = try container.decodeIfPresent(String.self, forKey: .category)
         area = try container.decodeIfPresent(String.self, forKey: .area)
         instructions = try container.decodeIfPresent(String.self, forKey: .instructions)
         thumbnail = try container.decodeIfPresent(String.self, forKey: .thumbnail)
@@ -47,7 +43,6 @@ final class Meal: MealProtocol, Decodable, Identifiable, Sendable {
         youtube = try container.decodeIfPresent(String.self, forKey: .youtube)
 
         recipeItems = RecipeItem.decodeItems(from: decoder)
-
         source = try container.decodeIfPresent(String.self, forKey: .source)
         imageSource = try container.decodeIfPresent(String.self, forKey: .imageSource)
         creativeCommonsConfirmed = try container.decodeIfPresent(String.self, forKey: .creativeCommonsConfirmed)

@@ -8,7 +8,10 @@
 import Foundation
 import SwiftData
 
-struct RecipeItem: Codable {
+struct RecipeItem: Codable, Identifiable {
+    var id: String {
+        ingredient + measurement
+    }
     var ingredient: String
     var measurement: String
 
@@ -28,21 +31,20 @@ struct RecipeItem: Codable {
     }
 }
 
-
 extension RecipeItem {
     static func decodeItems(from decoder: Decoder) -> [RecipeItem] {
-        guard let container = try? decoder.container(keyedBy: CodingKeys.self) else {
+        guard let container = try? decoder.container(keyedBy: CustomCodingKeys.self) else {
             return []
         }
         var items: [RecipeItem] = []
 
         for index in 1... {
-            let ingredientKey = "\(CodingKeys.ingredient.rawValue)\(index)"
-            let measurementKey = "\(CodingKeys.measurement.rawValue)\(index)"
+            let ingredientKey = "\(CodingKeys.ingredient.stringValue)\(index)"
+            let measurementKey = "\(CodingKeys.measurement.stringValue)\(index)"
 
             guard
-                let ingredientCodingKey = CodingKeys(rawValue: ingredientKey),
-                let measurementCodingKey = CodingKeys(rawValue: measurementKey)
+                let ingredientCodingKey = CustomCodingKeys(stringValue: ingredientKey),
+                let measurementCodingKey = CustomCodingKeys(stringValue: measurementKey)
             else {
                 break
             }

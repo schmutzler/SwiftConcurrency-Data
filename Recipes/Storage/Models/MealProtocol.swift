@@ -11,7 +11,7 @@ protocol MealProtocol {
     var id: String { get }
     var name: String { get }
     var drinkAlternate: String? { get }
-    var category: String? { get }
+    var categoryName: String? { get }
     var area: String? { get }
     var instructions: String? { get }
     var thumbnail: String? { get }

@@ -8,28 +8,26 @@
 import Foundation
 
 final class TheMealDBClient: FetchMealsProtocol, Sendable {
-
     private let baseURL = URL(string: "https://www.themealdb.com/api/json/v1/1")!
     private let dataStore: MealsDataStoreProtocol
 
-    // TODO move the data store out and make another sendable that uses both. Not sure what I would name that. Maybe datastore and rename current one to PersistenStore
     init(dataStore: MealsDataStoreProtocol) {
         self.dataStore = dataStore
     }
 
     func refreshCategories() async throws {
         let categories = try await fetchCategories()
+        for try await meals in try fetchMeals(for: categories) {
+
+            try await dataStore.saveMeals(meals)
+        }
         try await dataStore.saveCategories(categories)
     }
 
-    func refreshMeals(for categories: [String]) async throws {
-        let meals = try await fetchMeals(for: categories)
-        try await dataStore.saveMeals(meals)
-    }
-
-    func refreshMeals(for category: String) async throws {
-        let meals = try await fetchMeals(for: category)
-        try await dataStore.saveMeals(meals)
+    func refreshMealsFull(for meals: [Meal]) async throws {
+        for try await meal in try fetchMealsFull(for: meals) {
+            try await dataStore.saveMeal(meal)
+        }
     }
 
     func refreshMeal(for id: String) async throws {
@@ -42,38 +40,58 @@ final class TheMealDBClient: FetchMealsProtocol, Sendable {
         return response.categories
     }
     
-    func fetchMeals(for categories: [String]) async throws -> [Meal] {
-        var results: [Meal] = []
-
-        try await withThrowingTaskGroup(of: [Meal].self) { group in
-            categories.forEach { category in
-                group.addTask {
-                    return try await self.fetchMeals(for: category)
+    func fetchMeals(for categories: [Category]) throws -> AsyncStream<[Meal]> {
+        AsyncStream { continuation in
+            Task {
+                try await withThrowingTaskGroup(of: [Meal].self) { group in
+                    categories.forEach { category in
+                        group.addTask {
+                            let meals = try await self.fetchMeals(for: category)
+                            return meals
+                        }
+                    }
+                    for try await category in group {
+                        continuation.yield(category)
+                    }
                 }
-            }
-            for try await meals in group {
-                results.append(contentsOf: meals)
+                continuation.finish()
             }
         }
-
-        return results
     }
     
-    func fetchMeals(for category: String) async throws -> [Meal] {
+    func fetchMeals(for category: Category) async throws -> [Meal] {
         let response: MealsResponse = try await fetch(
             endpointPath: "/filter",
-            queryItems: [URLQueryItem(name: "c", value: category)]
+            queryItems: [URLQueryItem(name: "c", value: category.name)]
         )
         guard !response.meals.isEmpty else {
             throw TheMealDBClientError.dataNotFoundError
         }
 
         return response.meals.map { meal in
-            meal.category = category
+            meal.categoryName = category.name
             return meal
         }
     }
-    
+
+    func fetchMealsFull(for meals: [Meal]) throws -> AsyncStream<Meal> {
+        AsyncStream { continuation in
+            Task {
+                try await withThrowingTaskGroup(of: Meal.self) { group in
+                    meals.forEach { meal in
+                        group.addTask {
+                            return try await self.fetchMeal(for: meal.id)
+                        }
+                    }
+                    for try await meal in group {
+                        continuation.yield(meal)
+                    }
+                }
+                continuation.finish()
+            }
+        }
+    }
+
     func fetchMeal(for id: String) async throws -> Meal {
         let response: MealsResponse = try await fetch(
             endpointPath: "/lookup",

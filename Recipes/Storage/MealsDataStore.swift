@@ -11,10 +11,19 @@ import SwiftData
 @ModelActor
 final actor MealsDataStore: MealsDataStoreProtocol {
 
-    // MARK: Saving Struct Models to SwiftData
     func saveCategories(_ categories: [Category]) async throws {
         try modelContext.transaction {
-            categories.forEach { category in
+            try categories.forEach { category in
+                let categoryName = category.name
+                let fetchDescriptor = FetchDescriptor<Category>(
+                    predicate: #Predicate { $0.name == categoryName }
+                )
+
+                if let existingCategory = try modelContext.fetch(fetchDescriptor).first {
+                    category.isBookmarked = existingCategory.isBookmarked
+                    category.meals = existingCategory.meals
+                }
+
                 modelContext.insert(category)
             }
         }
@@ -23,7 +32,16 @@ final actor MealsDataStore: MealsDataStoreProtocol {
     
     func saveMeals(_ meals: [Meal]) async throws {
         try modelContext.transaction {
-            meals.forEach { meal in
+            try meals.forEach { meal in
+                let mealID = meal.id
+                let fetchDescriptor = FetchDescriptor<Meal>(
+                    predicate: #Predicate { $0.id == mealID }
+                )
+
+                if let existingMeal = try modelContext.fetch(fetchDescriptor).first {
+                    meal.isBookmarked = existingMeal.isBookmarked
+                }
+
                 modelContext.insert(meal)
             }
         }
@@ -31,20 +49,15 @@ final actor MealsDataStore: MealsDataStoreProtocol {
     }
     
     func saveMeal(_ meal: Meal) async throws {
+        let mealID = meal.id
+        let fetchDescriptor = FetchDescriptor<Meal>(
+            predicate: #Predicate { $0.id == mealID }
+        )
+
+        if let existingMeal = try modelContext.fetch(fetchDescriptor).first {
+            meal.isBookmarked = existingMeal.isBookmarked
+        }
         modelContext.insert(meal)
         try modelContext.save()
     }
-    
-//    // MARK: Fetching SwiftDatal and returning Struct Models
-//    func fetchCategories() async throws -> [Category] {
-//        return []
-//    }
-//    
-//    func fetchMeals(for categories: [String]) async throws -> [Meal] {
-//        return []
-//    }
-//    
-//    func fetchMeal(for id: String) async throws -> Meal {
-//        fatalError()
-//    }
 }

@@ -7,32 +7,32 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "D5220CA1-2D20-4244-AD5B-F2C9C606F124"
-            shouldBeEnabled = "Yes"
+            uuid = "3D48D9B6-803B-47A9-8491-B15311B1C585"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "Recipes/Networking/TheMealDBClientImpl.swift"
+            filePath = "Recipes/Views/MealsView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "69"
-            endingLineNumber = "69"
-            landmarkName = "fetch(endpointPath:queryItems:)"
+            startingLineNumber = "22"
+            endingLineNumber = "22"
+            landmarkName = "init(category:apiClient:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "730A92DF-F2DF-47DA-8FE6-4E00FFBC95EC"
-            shouldBeEnabled = "No"
+            uuid = "10FEE14C-9ABA-4C54-809D-48023D48359D"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "Recipes/Networking/TheMealDBClient.swift"
+            filePath = "Recipes/Views/MealsListView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "37"
-            endingLineNumber = "37"
-            landmarkName = "refreshMeal(for:)"
+            startingLineNumber = "22"
+            endingLineNumber = "22"
+            landmarkName = "init(categoryName:searchText:filterBookmarks:apiClient:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
