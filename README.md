@@ -28,4 +28,4 @@ Clone the repository:
 
 ```bash
 git clone https://github.com/schmutzler/swiftconcurrency-data.git
-cd swift-concurrency-swiftdata
+cd swiftconcurrency-data
