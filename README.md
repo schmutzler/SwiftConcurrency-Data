@@ -13,7 +13,7 @@ This repository demonstrates the use of Swift Concurrency and SwiftData.
 ### Sample App
 - List of Categories
 - List of Meals by Category
-- Category Detail
+- Meal Detail
 - Bookmarks
 - Search
   - Name for Category
