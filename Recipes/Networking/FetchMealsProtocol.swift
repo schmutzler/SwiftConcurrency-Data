@@ -7,6 +7,7 @@
 
 import Foundation
 
+// TODO: Seperate these out by fetch/refresh to not expose fetch to the UI
 protocol FetchMealsProtocol: Sendable {
     func fetchCategories() async throws -> [Category]
     func fetchMeals(for categories: [Category]) async throws -> AsyncStream<[Meal]>

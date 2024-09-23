@@ -10,8 +10,8 @@ import SwiftData
 
 @Model
 final class Category: CategoryProtocol, Decodable, Identifiable, Sendable {
-    @Attribute(.unique) var id: String
-    @Attribute(.unique) var name: String
+    @Attribute(.unique) let id: String
+    @Attribute(.unique) let name: String
     var thumbnail: String?
     var details: String?
     var isBookmarked: Bool = false

@@ -7,6 +7,7 @@
 
 import Foundation
 
+
 final class TheMealDBClient: FetchMealsProtocol, Sendable {
     private let baseURL = URL(string: "https://www.themealdb.com/api/json/v1/1")!
     private let dataStore: MealsDataStoreProtocol
@@ -17,15 +18,14 @@ final class TheMealDBClient: FetchMealsProtocol, Sendable {
 
     func refreshCategories() async throws {
         let categories = try await fetchCategories()
-        for try await meals in try fetchMeals(for: categories) {
-
+        for await meals in fetchMeals(for: categories) {
             try await dataStore.saveMeals(meals)
         }
         try await dataStore.saveCategories(categories)
     }
 
     func refreshMealsFull(for meals: [Meal]) async throws {
-        for try await meal in try fetchMealsFull(for: meals) {
+        for await meal in try fetchMealsFull(for: meals) {
             try await dataStore.saveMeal(meal)
         }
     }
@@ -40,17 +40,24 @@ final class TheMealDBClient: FetchMealsProtocol, Sendable {
         return response.categories
     }
     
-    func fetchMeals(for categories: [Category]) throws -> AsyncStream<[Meal]> {
+    // Use AsyncStream to fetch meals per category results proactively without needing to wait on all the results. The following list view will fetch detailed results as we get them in any fail or don't finish.
+    func fetchMeals(for categories: [Category]) -> AsyncStream<[Meal]> {
         AsyncStream { continuation in
             Task {
-                try await withThrowingTaskGroup(of: [Meal].self) { group in
+                await withTaskGroup(of: [Meal].self) { group in
                     categories.forEach { category in
                         group.addTask {
-                            let meals = try await self.fetchMeals(for: category)
-                            return meals
+                            do {
+                                return try await self.fetchMeals(for: category)
+                            } catch {
+                                // Could add retries here depending on error type.
+                                // Not throwing allows us to complete the remaining as one category fail shouldn't fail the rest, ideally.
+                                print("Unable to retrieve meals for \(category.name)")
+                                return []
+                            }
                         }
                     }
-                    for try await category in group {
+                    for await category in group {
                         continuation.yield(category)
                     }
                 }
@@ -68,12 +75,16 @@ final class TheMealDBClient: FetchMealsProtocol, Sendable {
             throw TheMealDBClientError.dataNotFoundError
         }
 
+        // Oddly, even the partial Meal results don't contain the category they belong to. Manually make the connections here
+        // Idealy the DB would have these linked with IDs.
         return response.meals.map { meal in
             meal.categoryName = category.name
             return meal
         }
     }
 
+    // TODO: Cleanup throws similar to fetchMeals
+    // Use AsyncStream to fetch detailed results proactively without needing to wait on all the results. Detailed view will fetch again in the case a full meal hasn't been fetched.
     func fetchMealsFull(for meals: [Meal]) throws -> AsyncStream<Meal> {
         AsyncStream { continuation in
             Task {
@@ -121,6 +132,7 @@ extension TheMealDBClient {
         }
     }
 
+    // TODO: Swift 6, use typed throws. ex: throws(TheMealDBClientError). Use here other places that are relevant.
     private func buildURLRequest(path: String, queryItems: [URLQueryItem] = []) throws -> URLRequest {
         let url = baseURL.appendingPathComponent("\(path).php")
 
@@ -129,6 +141,10 @@ extension TheMealDBClient {
             components.queryItems = queryItems
         }
         
-        return URLRequest(url: components.url!)
+        guard let url = components.url else {
+            throw TheMealDBClientError.invalidURLError
+        }
+
+        return URLRequest(url: url)
     }
 }

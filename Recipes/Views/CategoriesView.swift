@@ -9,7 +9,6 @@ import SwiftUI
 import SwiftData
 
 struct CategoriesView: View {
-    @State private var selectedCategory: Category?
     @State private var searchText: String = ""
     @State private var filterBookmarks: Bool = false
     @State private var refreshing: Bool = true

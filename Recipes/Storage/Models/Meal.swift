@@ -10,8 +10,8 @@ import SwiftData
 
 @Model
 final class Meal: MealProtocol, Decodable, Identifiable, Sendable {
-    @Attribute(.unique) var id: String = ""
-    @Attribute(.unique) var name: String = ""
+    @Attribute(.unique) let id: String
+    @Attribute(.unique) let name: String
     var drinkAlternate: String?
     var categoryName: String?
     var category: Category?
@@ -37,12 +37,16 @@ final class Meal: MealProtocol, Decodable, Identifiable, Sendable {
         area = try container.decodeIfPresent(String.self, forKey: .area)
         instructions = try container.decodeIfPresent(String.self, forKey: .instructions)
         thumbnail = try container.decodeIfPresent(String.self, forKey: .thumbnail)
+
+        // Tags are listed as as a single String which felt weird and had data inconsistencies. Creating a cleaned up list here.
         tags = try container.decodeIfPresent(String.self, forKey: .tags)?
             .components(separatedBy: ",")
             .filter { !$0.isEmpty }  ?? []
         youtube = try container.decodeIfPresent(String.self, forKey: .youtube)
 
+        // Weird keys for ingredients and measurements. Seperating these out here and handling with CustomCodingKeys.
         recipeItems = RecipeItem.decodeItems(from: decoder)
+
         source = try container.decodeIfPresent(String.self, forKey: .source)
         imageSource = try container.decodeIfPresent(String.self, forKey: .imageSource)
         creativeCommonsConfirmed = try container.decodeIfPresent(String.self, forKey: .creativeCommonsConfirmed)
